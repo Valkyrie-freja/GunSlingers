@@ -16,6 +16,15 @@ public class SelectScene : MonoBehaviour
     }
 
     protected static string cname = "AvatarFox";
+    protected static int iCharacterId = 0;
+
+    /*public void SelectCharacter(int num){
+      iCharacterId = num;
+    }*/
+
+    public static int GetCharacterId(){
+      return iCharacterId;
+    }
 
     public void SelectCharacter(string name){
       cname=name;

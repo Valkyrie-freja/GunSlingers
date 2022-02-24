@@ -14,10 +14,10 @@ using ExitGames.Client.Photon;
 public class MatchingScene : MonoBehaviourPunCallbacks{
   string cname;
   bool isOnRoom = false;
-  public static int[] playerPosition = new int[PhotonNetwork.CurrentRoom.MaxPlayers+1];
-
-//  public GameObject playerNumberUI = null;//プレイヤー人数を表示するTextオブジェクト
-  public TextMeshProUGUI playerNumberUI = null;//プレイヤー人数を表示するTextオブジェクト
+  bool isGetPlayerPosition;
+  static int maxPlayer = 4;
+  public static int[] playerPosition = new int[maxPlayer];
+  public TextMeshProUGUI playerNumberUI;//プレイヤー人数を表示するTextオブジェクト
 
   // Start is called before the first frame update
   void Start(){
@@ -25,17 +25,17 @@ public class MatchingScene : MonoBehaviourPunCallbacks{
     Debug.Log(cname);
 
     PhotonNetwork.NickName = cname;
+    playerNumberUI = playerNumberUI.GetComponent<TextMeshProUGUI>();
     PhotonNetwork.ConnectUsingSettings();
   }
 
   // Update is called once per frame
   void Update(){
     if(isOnRoom){
-      //Text playerNumber = playerNumberUI.GetComponent<Text>();
       playerNumberUI.text = $"{PhotonNetwork.CurrentRoom.PlayerCount}/{PhotonNetwork.CurrentRoom.MaxPlayers}";
       if(PhotonNetwork.CurrentRoom.IsOpen == false){
         if(PhotonNetwork.LocalPlayer.ActorNumber == 1)SendCustomPropaties();
-        if(isGetPlayerPosition == true)ChangeScene();
+        //if(isGetPlayerPosition == true)ChangeScene();
       }
     }
   }
@@ -48,15 +48,12 @@ public class MatchingScene : MonoBehaviourPunCallbacks{
   //if there are nothing room to join, run this function
   public override void OnJoinRandomFailed(short returnCode, string message){
     var roomOptions = new RoomOptions();
-    roomOptions.MaxPlayers = 4;//set max join room as 4
+    roomOptions.MaxPlayers = (byte)maxPlayer;//set max join room as 4
 
     PhotonNetwork.CreateRoom(null, roomOptions);
   }
 
   public override void OnJoinedRoom(){
-    //var position = new Vector3(Random.Range(-3f, 3f), Random.Range(-3f, 3f));
-    //PhotonNetwork.Instantiate(cname, position, Quaternion.identity);
-
     isOnRoom = true;
 
     //if room is max, close room
@@ -73,7 +70,7 @@ public class MatchingScene : MonoBehaviourPunCallbacks{
   //カスタムプロパティ関連
   void SendCustomPropaties(){//送信
     Hashtable randomtable = new ExitGames.Client.Photon.Hashtable();
-    for(int i = 1; i <= PhotonNetwork.CurrentRoom.PlayerCount; i++){
+    for(int i = 0; i < PhotonNetwork.CurrentRoom.PlayerCount; i++){
       playerPosition[i] = Random.Range(0, GameScene.GetRockNum());
       randomtable[i] = playerPosition[i];
     }
@@ -81,11 +78,9 @@ public class MatchingScene : MonoBehaviourPunCallbacks{
     randomtable.Clear();
   }//最初のプレイヤーのidは1のようです。
 
-  bool isGetPlayerPosition = (PhotonNetwork.LocalPlayer.ActorNumber == 1) ? true : false;
-
-  public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps){//カスタムプロパティが変更されるたびに呼び出されるらしい　∴受信
+  public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps){//カスタムプロパティが変更されるたびに呼び出されるらしい
     if(PhotonNetwork.LocalPlayer.ActorNumber != 1){
-      for(int i = 1;i <= PhotonNetwork.CurrentRoom.PlayerCount; i++){playerPosition[i] = (targetPlayer.CustomProperties[i] is int value1) ? (int)value1 : -1;}
+      for(int i = 0;i < PhotonNetwork.CurrentRoom.PlayerCount; i++){playerPosition[i] = (targetPlayer.CustomProperties[i] is int value1) ? (int)value1 : -1;}
       isGetPlayerPosition = true;
     }
   }

@@ -1,125 +1,164 @@
 //using System.Collections;
 //using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 using Photon.Pun;
 using Photon.Realtime;
 using ExitGames.Client.Photon;
 
 public class GameScene : MonoBehaviourPunCallbacks{
-  string cname;
-  public static Vector3 stageCenter = new Vector3(-898.5f, 233.27f, 603.7f);//対戦場所の中心座標
+  string sMyName;
+  public static Vector3 v3StageCenter = new Vector3(-898.5f, 233.27f, 603.7f);//対戦場所の中心座標
 
-  static int rockNum = 9;//岩の数
-  public static int GetRockNum(){return rockNum;}
+  static int iRockNum = 9;//岩の数
+  public static int GetRockNum(){return iRockNum;}
+
+  static int iPlayerCount = PhotonNetwork.CurrentRoom.PlayerCount;//プレイヤーの数
 
   //各オブジェクトの座標
-  Vector3[] rockPosition = new Vector3[rockNum];
-  Vector3[] characterPosition = new Vector3[rockNum];//プレイヤーは岩の後ろに隠れるため、プレイヤーの立ち位置も岩と同数
-  Vector3[] targetPosition = new Vector3[rockNum];//円型に並んでいるので岩の数と岩の間の数は同数
-  Vector3 cameraHeight = new Vector3(0, 10, 0);
-  //int playerPosition = 0;
-  int[] playerPosition = new int[5];
-  GameObject[] player = new GameObject[5];
+  Vector3[] v3RockPos = new Vector3[iRockNum];
+  Vector3[] v3StandPos = new Vector3[iRockNum];//プレイヤーは岩の後ろに隠れるため、プレイヤーの立ち位置も岩と同数
+  Vector3[] v3TrgPos = new Vector3[iRockNum];//円型に並んでいるので岩の数と岩の間の数は同数
+  Vector3 v3CameraHeight = new Vector3(0, 10, 0);
+  int[] iPlayerPos = new int[iPlayerCount];
+  GameObject[] goPlayer = new GameObject[iPlayerCount];
   public GameObject mainCamera;
-  //int playerCameraDistance = 10;
 
-  byte myNumber;
-  string[] playersName = new string[5];
+  public Text text;
+  public GameObject[] CharacterList = new GameObject[4];
+  GameObject goSelectCharacter(string sChName){
+    switch(sChName){
+      case "AvatarFox": return CharacterList[0]; break;
+      case "AvatarHuman": return CharacterList[1]; break;
+      case "AvatarHawk": return CharacterList[2]; break;
+      case "AvatarHelmet": return CharacterList[3]; break;
+    }
+    return null;
+  }
+  int[] iEndSelectAction = new int[iPlayerCount];
 
-  byte[] locate = new byte[5];
-  byte[] attack = new byte[5];
+  byte iMyNumber;
+  string[] sPlayerName = new string[iPlayerCount];
 
+  byte[] iLocatePast = new byte[iPlayerCount];//各プレイヤーの元の位置
+  byte[] iLocate = new byte[iPlayerCount];//各プレイヤーの位置
+  byte[] iAttack = new byte[iPlayerCount];//各プレイヤーの攻撃場所
 
   // Start is called before the first frame update
   void Start(){
     PhotonNetwork.IsMessageQueueRunning = true;
-    cname = SelectScene.GetCharacterName();//SelectSceneで選択したキャラクターをcnameに設定
+    sMyName = SelectScene.GetCharacterName();//SelectSceneで選択したキャラクターをsMyNameに設定
     CalculatePosition();//岩やプレイヤーの位置の計算
-    for(int i = 0; i < rockNum; i++){
-      PhotonNetwork.Instantiate("rock", rockPosition[i], Quaternion.identity);//生成
+    for(int i = 0; i < iRockNum; i++){
+      PhotonNetwork.Instantiate("rock", v3RockPos[i], Quaternion.identity);//生成
     }
 
     //移動と攻撃の初期化
-    for(int i = 0; i < 5; i++){
-      locate[i] = 0;
-      attack[i] = 0;
+    for(int i = 0; i < iPlayerCount; i++){
+      iLocatePast[i] = 0;
+      iLocate[i] = 0;
+      iAttack[i] = 0;
     }
 
-    var localPlayer = PhotonNetwork.LocalPlayer;//自分のデータをPhotonから取得
-    myNumber = (byte)localPlayer.ActorNumber;//自分のIDを取得
+    iMyNumber = (byte)(PhotonNetwork.LocalPlayer.ActorNumber - 1);//自分のIDを取得
 
     var players = PhotonNetwork.PlayerList;//自分を含んだ全プレイヤーのデータの配列
-    for(int i = 0; i < PhotonNetwork.CurrentRoom.PlayerCount; i++){
-      Debug.Log($"pn:{players[i].ActorNumber}");
-      playersName[players[i].ActorNumber/*0番目のplayersのActorNumberは1になる*/] = players[i].NickName;
-    }
+    // for(int i = 0; i < iPlayerCount; i++){
+    //   Debug.Log($"pn:{players[i].ActorNumber}");
+    // }
+
 
     //選択したキャラクターを生成
-    /*GameObject selectedCharacter = Resources.Load<GameObject>(cname);
-    player = Instantiate(selectedCharacter, characterPosition[playerPosition[myNumber]], Quaternion.identity);*/
-    for(int i = 1; i <= PhotonNetwork.CurrentRoom.PlayerCount; i++){
-      GameObject selectedCharacter = Resources.Load<GameObject>(playersName[i]);
-      playerPosition[i] = MatchingScene.playerPosition[i];// 0 ~ rockNum-1 までの乱数で指定したい
-      player[i] = Instantiate(selectedCharacter, characterPosition[playerPosition[i]], Quaternion.identity);
+    for(int i = 0; i < iPlayerCount; i++){
+      GameObject goSelectedCharacter = goSelectCharacter(players[i].NickName);
+      iPlayerPos[i] = MatchingScene.playerPosition[i];// 0 ~ iRockNum-1 までの乱数で指定したい
+      iLocatePast[i] = iLocate[i] = (byte)iPlayerPos[i];
+      goPlayer[i] = Instantiate(goSelectedCharacter, v3StandPos[iPlayerPos[i]], Quaternion.identity);
+      iEndSelectAction[i] = 0;
     }
 
     //カメラをキャラクターの外側のちょっと上に中心を見るように設置
-    mainCamera.transform.position = stageCenter + 1.3f*(characterPosition[playerPosition[myNumber]]-stageCenter) + cameraHeight;
-    mainCamera.transform.LookAt(stageCenter);
+    mainCamera.transform.position = v3StageCenter + 1.3f*(v3StandPos[iPlayerPos[iMyNumber]]-v3StageCenter) + v3CameraHeight;
+    mainCamera.transform.LookAt(v3StageCenter);
 
-    Debug.Log("your id is "+myNumber);
+    //Debug.Log("your id is "+iMyNumber);
+
+    text = text.GetComponent<Text>();
+    text.text = $"{iSumSeq(iEndSelectAction)}/{PhotonNetwork.CurrentRoom.PlayerCount}";
+
   }
 
   // Update is called once per frame
+  int [] iEndAction = new int[iPlayerCount];
+  int iSumSeq(int [] seq){
+    int sum = 0;
+    for(int i = 0; i < seq.Length; i++){
+      sum += seq[i];
+    }
+    return sum;
+  }
+
   void Update(){
-    for(int n = 1; n <= PhotonNetwork.CurrentRoom.PlayerCount; n++){
-      switch(action[n]){
+    for(int iPlayerNum = 0; iPlayerNum < iPlayerCount; iPlayerNum++){
+      switch(sAction[iPlayerNum]){
       case "moveright":
-        MoveRight(n/*ここの引数は動かしたいプレイヤーのIDなんだけどどうやって全員動かそうかね？*/);
+        MoveRight(iPlayerNum);
+        if(goPlayer[iPlayerNum].transform.position == v3StandPos[iLocate[iPlayerNum]]){
+          iEndAction[iPlayerNum] = 1;
+        }
         break;
 
       case "moveleft":
-        MoveLeft(n);
+        MoveLeft(iPlayerNum);
+        if(goPlayer[iPlayerNum].transform.position == v3StandPos[iLocate[iPlayerNum]]){
+          iEndAction[iPlayerNum] = 1;
+        }
         break;
 
       case "shot":
-        Shot(n);
+        Shot(iPlayerNum);
+        if(/*Shot completed*/true){
+          OnStartTurn();
+        }
         break;
       }
     }
-    switch(action[myNumber]){
+    Debug.Log($"sum:{iSumSeq(iEndAction)}/pc{iPlayerCount}");
+    if(iSumSeq(iEndAction) >= iPlayerCount)OnStartTurn();
+    switch(sAction[iMyNumber]){
       case "aim":
         //中心から、一つ隣の岩と今いる岩までのベクトル和の半分　つまり、二つの岩の真ん中になる。
-        Vector3 viewPosition = (characterPosition[playerPosition[myNumber]] + characterPosition[(playerPosition[myNumber] +1)%rockNum] - 2*stageCenter) * 0.4f;
-        mainCamera.transform.position = Vector3.MoveTowards(mainCamera.transform.position, stageCenter + viewPosition + cameraHeight, 100.0f * Time.deltaTime);
-        mainCamera.transform.LookAt(targetPosition[(playerPosition[myNumber]+4)%rockNum] + cameraHeight);//反対側の右寄りの岩にカメラを向けておく
+        Vector3 v3ViewPos = (v3StandPos[iPlayerPos[iMyNumber]] + v3StandPos[(iPlayerPos[iMyNumber] +1)%iRockNum] - 2*v3StageCenter) * 0.4f;
+        mainCamera.transform.position = Vector3.MoveTowards(mainCamera.transform.position, v3StageCenter + v3ViewPos + v3CameraHeight, 100.0f * Time.deltaTime);
+        mainCamera.transform.LookAt(v3TrgPos[(iPlayerPos[iMyNumber]+4)%iRockNum] + v3CameraHeight);//反対側の右寄りの岩にカメラを向けておく
         break;
-
       case "back":
-        mainCamera.transform.position = Vector3.MoveTowards(mainCamera.transform.position, stageCenter + 1.3f*(characterPosition[playerPosition[myNumber]]-stageCenter) + cameraHeight, 100.0f * Time.deltaTime);
-        mainCamera.transform.LookAt(stageCenter);
+        mainCamera.transform.position =
+          Vector3.MoveTowards(mainCamera.transform.position,
+                              v3StageCenter + 1.3f*(v3StandPos[iPlayerPos[iMyNumber]]-v3StageCenter) + v3CameraHeight,
+                              100.0f * Time.deltaTime);
+        mainCamera.transform.LookAt(v3StageCenter);
         break;
-
     }
-
   }
 
   void MoveRight(int playerID){
+    //Debug.Log($"MoveRight({playerID})");
     //プレイヤーの位置の移動（カメラも一緒に移動させる）
-    player[playerID].transform.position = Vector3.MoveTowards(player[playerID].transform.position, characterPosition[playerPosition[playerID]], 100.0f * Time.deltaTime);
-    if(playerID == myNumber){//自分のキャラのときはカメラも動かす
-      mainCamera.transform.position = Vector3.MoveTowards(mainCamera.transform.position, stageCenter + 1.3f*(characterPosition[playerPosition[myNumber]]-stageCenter) + cameraHeight, 100.0f * Time.deltaTime);
-      mainCamera.transform.LookAt(stageCenter);//ステージの中心にカメラを向けておく
+    goPlayer[playerID].transform.position = Vector3.MoveTowards(goPlayer[playerID].transform.position, v3StandPos[iPlayerPos[playerID]], 100.0f * Time.deltaTime);
+    if(playerID == iMyNumber){//自分のキャラのときはカメラも動かす
+      mainCamera.transform.position = Vector3.MoveTowards(mainCamera.transform.position, v3StageCenter + 1.3f*(v3StandPos[iPlayerPos[iMyNumber]]-v3StageCenter) + v3CameraHeight, 150.0f * Time.deltaTime);
+      mainCamera.transform.LookAt(v3StageCenter);//ステージの中心にカメラを向けておく
     }
   }
 
   void MoveLeft(int playerID){
     //プレイヤーの位置の移動（カメラも一緒に移動させる）
-    player[playerID].transform.position = Vector3.MoveTowards(player[playerID].transform.position, characterPosition[playerPosition[playerID]], 100.0f * Time.deltaTime);
-    if(playerID == myNumber){//自分のキャラのときはカメラも動かす
-      mainCamera.transform.position = Vector3.MoveTowards(mainCamera.transform.position, stageCenter + 1.3f*(characterPosition[playerPosition[myNumber]]-stageCenter) + cameraHeight, 100.0f * Time.deltaTime);
-      mainCamera.transform.LookAt(stageCenter);//ステージの中心にカメラを向けておく
+    goPlayer[playerID].transform.position = Vector3.MoveTowards(goPlayer[playerID].transform.position, v3StandPos[iPlayerPos[playerID]], 100.0f * Time.deltaTime);
+    if(playerID == iMyNumber){//自分のキャラのときはカメラも動かす
+      mainCamera.transform.position = Vector3.MoveTowards(mainCamera.transform.position, v3StageCenter + 1.3f*(v3StandPos[iPlayerPos[iMyNumber]]-v3StageCenter) + v3CameraHeight, 150.0f * Time.deltaTime);
+      mainCamera.transform.LookAt(v3StageCenter);//ステージの中心にカメラを向けておく
     }
   }
 
@@ -129,11 +168,13 @@ public class GameScene : MonoBehaviourPunCallbacks{
 
   //ターン開始時の処理
   void OnStartTurn(){//initialize and decide action
-    for(int i = 0; i < 5; i++){
-      locate[i] = 0;
-      attack[i] = 0;
+    for(int i = 0; i < iPlayerCount; i++){
+      //iLocate[i] = 0;
+      iAttack[i] = 0;
+      iEndAction[i] = 0;
+      iEndSelectAction[i] = 0;
     }
-    endSelectAction=0;
+    text.text = $"{iSumSeq(iEndSelectAction)}/{PhotonNetwork.CurrentRoom.PlayerCount}";
     InitializeAction();
   }
 
@@ -143,43 +184,41 @@ public class GameScene : MonoBehaviourPunCallbacks{
     UpdateCustomPropaties();
 
     //wait until all player propaties update
-
   }
 
   //ターン終了時の処理
   void OnEndTurn(){
     WhoKillWho();//calculate
-    for(int n = 1; n <= PhotonNetwork.CurrentRoom.PlayerCount; n++){
+    for(int iPlayerNum = 0; iPlayerNum < iPlayerCount; iPlayerNum++){
+      /*
       for(int i = 0; i < 16; i++){
-        if(result[i].victim == n){
-          DeadAnimation(n);
+        if(result[i].victim == iPlayerNum){
+          DeadAnimation(iPlayerNum);
           goto End;
         }
-        if(result[i].killer == n){
-          KillAnimation(n);
+        if(result[i].killer == iPlayerNum){
+          KillAnimation(iPlayerNum);
           goto End;
         }
-      }
-      if(locate[n] <= 88){//移動
-        if(locate[n]%11 == 0){
-          action[n] = "moveleft";
-          //playerPosition[n] = (playerPosition[n] -1 +rockNum)%rockNum;
+      }*/
+      if(iLocate[iPlayerNum] != iLocatePast[iPlayerNum]){//移動
+        if((iLocate[iPlayerNum] < iLocatePast[iPlayerNum] && iLocate[iPlayerNum] != (byte)0) || (iLocate[iPlayerNum] > iLocatePast[iPlayerNum] && iLocate[iPlayerNum] == (byte)0)){
+          sAction[iPlayerNum] = "moveleft";
         }else{
-          action[n] = "moveright";
-          //playerPosition[n] = (playerPosition[n] +1)%rockNum;
+          sAction[iPlayerNum] = "moveright";
         }
-      }else if(attack[n] == 9){
-        action[n] = "wait";
+      }else if(iAttack[iPlayerNum] == iRockNum + 1){
+        sAction[iPlayerNum] = "wait";
       }else{
-        action[n] = "shot";
+        sAction[iPlayerNum] = "shot";
       }
-      End: Debug.Log("hello");
+      Debug.Log($"OnEndTurn/{iPlayerNum}:{sAction[iPlayerNum]}, {iLocatePast[iPlayerNum]} -> {iLocate[iPlayerNum]}");
+      //End:;
     }
     //run animation
 
     //this function call when user's action is decided.
     //so this should submit user's action.
-    OnStartTurn();
   }
 
   void DeadAnimation(int playerID){}
@@ -190,6 +229,9 @@ public class GameScene : MonoBehaviourPunCallbacks{
   class Result{
     public int victim, killer, site, position, isKill;
     public void InputResult(int v, int k, int s, int p, int isK){victim = v; killer = k; site = s; position = p; isKill = isK;}
+    public void ShowResult(){
+      //Debug.Log($"{killer} kill {victim} in {site}, {position}");
+    }
   };
 
   Result[] result = new Result[16];
@@ -201,63 +243,74 @@ public class GameScene : MonoBehaviourPunCallbacks{
   }
 
   void WhoKillWho(){
-    Debug.Log("WhoKillWho-----");
+    //Debug.Log("WhoKillWho-----");
     InitializeResult();
     int i = 0;
-    for(int pn = 1; pn <= 4; pn++){
-      for(int qn = 1; qn <= 4; qn++){
+    for(int pn = 0; pn < iPlayerCount; pn++){
+      for(int qn = 0; qn < iPlayerCount; qn++){
         if(pn!=qn){
-          if((locate[pn]-attack[pn])%10 == 0 && (locate[qn]-attack[pn])%10 == 0){
-            if((locate[qn]-attack[pn])==90){
-              //pn kill qn by knife
-              result[i].InputResult(qn, pn, (int)Site.rock, attack[pn], 1);
-              Debug.Log(pn+" kill "+qn+" with knife.");
-            }else{
-              //pn and qn both not death
-              result[i].InputResult(qn, pn, (int)Site.rock, attack[pn], 0);
-              Debug.Log(pn+" and "+qn+" meet in same space.");
+          if(iLocate[qn] == iLocatePast[qn]){
+            //player q is wait.
+            if(iAttack[pn] == iLocate[qn]){
+              //pn kill qn with knife.
+              result[i].InputResult(qn, pn, (int)Site.rock, iAttack[pn], 1);
             }
-          }else if((locate[pn]-90) >= 0 && (locate[qn]-attack[pn]*10) >= 0 && (locate[qn]-90) < 0){
-            //pn kill qn by gun
-            result[i].InputResult(qn, pn, (int)Site.target, attack[pn], 1);
-            Debug.Log(pn+" kill "+qn+" with gun.");
+          }else{
+            //player q is move.
+            int iPass;//通過した箇所
+            if(iLocate[qn] > iLocatePast[qn] && iLocate[qn] != 0){
+              iPass = iLocatePast[qn];
+            }else{
+              iPass = iLocatePast[qn]-1; if( iPass < 0 )iPass = iRockNum;
+            }
+            if(iAttack[pn] == iPass){
+              //pn kill qn with gun.
+              result[i].InputResult(qn, pn, (int)Site.target, iAttack[pn], 1);
+            }
           }
           i++;
         }
       }
     }
-    Debug.Log("WhoKillWho?");
-    Debug.Log(result);
+    //Debug.Log("WhoKillWho?");
+    for(int j = 0; j < 16; j++) result[j].ShowResult();
   }
 
   //カスタムプロパティ関連
   void UpdateCustomPropaties(){
-    Debug.Log($"Update Custom Propaties / locate:{locate[myNumber]} / attack:{attack[myNumber]}");
+    //Debug.Log($"Update Custom Propaties / / iLocate:{iLocatePast[iMyNumber]}->{iLocate[iMyNumber]} / iAttack:{iAttack[iMyNumber]}");
     Hashtable hashtable = new ExitGames.Client.Photon.Hashtable();
-    hashtable["locate"] = locate[myNumber];
-    hashtable["attack"] = attack[myNumber];
+    hashtable["iLocatePast"] = iLocatePast[iMyNumber];
+    hashtable["iLocate"] = iLocate[iMyNumber];
+    hashtable["iAttack"] = iAttack[iMyNumber];
     PhotonNetwork.LocalPlayer.SetCustomProperties(hashtable);
     hashtable.Clear();
   }//最初のプレイヤーのidは1のようです。
 
-  int endSelectAction = 0;
   public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps){//カスタムプロパティが変更されるたびに呼び出されるらしい
-    Debug.Log("Custom Properties Updated");
+    //Debug.Log("Custom Properties Updated");
 
-    locate[targetPlayer.ActorNumber] = (targetPlayer.CustomProperties["locate"] is byte value1) ? (byte)value1 : (byte)9;
-    attack[targetPlayer.ActorNumber] = (targetPlayer.CustomProperties["attack"] is byte value2) ? (byte)value2 : (byte)9;
-    //Debug.Log($"get locale : {PhotonNetwork.CurrentRoom.CustomProperties["locate"]} is converted to {locate[targetPlayer.ActorNumber]}");
-    //Debug.Log("playerNumber:"+targetPlayer.ActorNumber+"\tlocale:"+locate[targetPlayer.ActorNumber]+"\tattack:"+attack[targetPlayer.ActorNumber]);
+    iLocatePast[targetPlayer.ActorNumber - 1] = (targetPlayer.CustomProperties["iLocatePast"] is byte value0) ? (byte)value0 : (byte)9;
+    iLocate[targetPlayer.ActorNumber - 1] = (targetPlayer.CustomProperties["iLocate"] is byte value1) ? (byte)value1 : (byte)9;
+    iAttack[targetPlayer.ActorNumber - 1] = (targetPlayer.CustomProperties["iAttack"] is byte value2) ? (byte)value2 : (byte)9;
 
     //全員のデータが集まるまで次のターンを開始しない
-    if(locate[targetPlayer.ActorNumber]!=9){
-      endSelectAction++;
+    //Debug.Log("iEndSelectAction = "+iEndSelectAction);
+    if(iLocate[targetPlayer.ActorNumber - 1]!=9){
+      iEndSelectAction[targetPlayer.ActorNumber - 1] = 1;
+      text.text = $"{iSumSeq(iEndSelectAction)}/{PhotonNetwork.CurrentRoom.PlayerCount}";
     }
-    if(endSelectAction>=4){
+    //Debug.Log($"iEndSelectAction:{iEndSelectAction}/iPlayerCount:{iPlayerCount}");
+    if(iSumSeq(iEndSelectAction)>=iPlayerCount){
+      for(int iPlayerNum = 0; iPlayerNum < iPlayerCount; iPlayerNum++){
+        //Debug.Log($"{iPlayerNum}/LP:{iLocatePast[iPlayerNum]}, L:{iLocate[iPlayerNum]}, A:{iAttack[iPlayerNum]}");
+      }
       OnEndTurn();
-      endSelectAction=0;
+      //iEndSelectAction=0;
+      //text.text = $"{iEndSelectAction}/{PhotonNetwork.CurrentRoom.PlayerCount}";
     }
-    Debug.Log("endSelectAction:"+endSelectAction);
+
+    //Debug.Log("iEndSelectAction:"+iEndSelectAction);
   }
 
   void CalculatePosition(){
@@ -265,94 +318,102 @@ public class GameScene : MonoBehaviourPunCallbacks{
 
     //岩の座標
     float theta = 0;
-    for(int i = 0; i < rockNum; i++){
-      rockPosition[i] = new Vector3(stageCenter.x + stageRadius*Mathf.Cos(theta * Mathf.Deg2Rad), stageCenter.y, stageCenter.z + stageRadius*Mathf.Sin(theta * Mathf.Deg2Rad));
-      theta += 360.0f/rockNum;
+    for(int i = 0; i < iRockNum; i++){
+      v3RockPos[i] = new Vector3(v3StageCenter.x + stageRadius*Mathf.Cos(theta * Mathf.Deg2Rad),
+                                 v3StageCenter.y,
+                                 v3StageCenter.z + stageRadius*Mathf.Sin(theta * Mathf.Deg2Rad));
+      theta += 360.0f/iRockNum;
     }
 
     //プレイヤーの待機場所の座標
     int characterRadius = stageRadius + 10;
     theta = 0;
-    for(int i=0; i < rockNum; i++){
-      characterPosition[i] = new Vector3(stageCenter.x + characterRadius*Mathf.Cos(theta * Mathf.Deg2Rad), stageCenter.y, stageCenter.z + characterRadius*Mathf.Sin(theta * Mathf.Deg2Rad));
-      theta += 360.0f/rockNum;
+    for(int i=0; i < iRockNum; i++){
+      v3StandPos[i] = new Vector3(v3StageCenter.x + characterRadius*Mathf.Cos(theta * Mathf.Deg2Rad),
+                                  v3StageCenter.y,
+                                  v3StageCenter.z + characterRadius*Mathf.Sin(theta * Mathf.Deg2Rad));
+      theta += 360.0f/iRockNum;
     }
 
     //射撃場所の座標
-    theta = (360.0f/rockNum)/2;//最初の角を半分ずらす
-    for(int i = 0; i < rockNum; i++){
-      targetPosition[i] = new Vector3(stageCenter.x + stageRadius*Mathf.Cos(theta * Mathf.Deg2Rad), stageCenter.y+5, stageCenter.z + stageRadius*Mathf.Sin(theta * Mathf.Deg2Rad));
-      theta += 360.0f/rockNum;
+    theta = (360.0f/iRockNum)/2;//最初の角を半分ずらす
+    for(int i = 0; i < iRockNum; i++){
+      v3TrgPos[i] = new Vector3(v3StageCenter.x + stageRadius*Mathf.Cos(theta * Mathf.Deg2Rad),
+                                v3StageCenter.y+5,
+                                v3StageCenter.z + stageRadius*Mathf.Sin(theta * Mathf.Deg2Rad));
+      theta += 360.0f/iRockNum;
     }
   }
 
-  string[] action = new string[5];
+  string[] sAction = new string[iPlayerCount];
 
   void InitializeAction(){
-    for(int i = 0; i <= 4; i++){
-      action[i] = "none";
+    for(int i = 0; i < iPlayerCount; i++){
+      sAction[i] = "none";
     }
   }
 
   public void OnAimButton(){
-    action[myNumber] = "aim";
+    sAction[iMyNumber] = "aim";
   }
 
   public void OnShotLeftButton(){
-    action[myNumber] = "shotleft";
-    locate[myNumber] = (byte)(90 + playerPosition[myNumber]);
-    attack[myNumber] = (byte)((playerPosition[myNumber] + 5)%rockNum);
+    //sAction[iMyNumber] = "shotleft";
+    iLocatePast[iMyNumber] = iLocate[iMyNumber];
+    iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
+    iAttack[iMyNumber] = (byte)((iPlayerPos[iMyNumber] + 5)%iRockNum);
     OnTurn();
   }
 
   public void OnShotCenterButton(){
-    action[myNumber] = "shotcenter";
-    locate[myNumber] = (byte)(90 + playerPosition[myNumber]);
-    attack[myNumber] = (byte)((playerPosition[myNumber] + 4)%rockNum);
+    //sAction[iMyNumber] = "shotcenter";
+    iLocatePast[iMyNumber] = iLocate[iMyNumber];
+    iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
+    iAttack[iMyNumber] = (byte)((iPlayerPos[iMyNumber] + 4)%iRockNum);
     OnTurn();
   }
 
   public void OnShotRightButton(){
-    action[myNumber] = "shotright";
-    locate[myNumber] = (byte)(90 + playerPosition[myNumber]);
-    attack[myNumber] = (byte)((playerPosition[myNumber] + 3)%rockNum);
+    //sAction[iMyNumber] = "shotright";
+    iLocatePast[iMyNumber] = iLocate[iMyNumber];
+    iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
+    iAttack[iMyNumber] = (byte)((iPlayerPos[iMyNumber] + 3)%iRockNum);
     OnTurn();
   }
 
-  // public void OnShotLeftButton(){
-  //   action = "shotleft";
-  // }
-
   public void OnRightButton(){
-    action[myNumber] = "moveright";
-    int currentPosition = playerPosition[myNumber];
-    playerPosition[myNumber] = (playerPosition[myNumber] +1)%rockNum;
-    locate[myNumber] = (byte)(10*currentPosition + playerPosition[myNumber]);
-    attack[myNumber] = (byte)(playerPosition[myNumber]);
-    //Debug.Log("playerPosition[myNumber]:"+playerPosition[myNumber]);
-    OnTurn();
-    //Vector3.MoveTowards(characterPosition[currentPosition], characterPosition[playerPosition[myNumber]], 1.0f * Time.deltaTime);
+    if(iEndSelectAction[iMyNumber] == 0){
+      int iCurrentPosition = iPlayerPos[iMyNumber];
+      iPlayerPos[iMyNumber] = (iCurrentPosition +1)%iRockNum;
+
+      iLocatePast[iMyNumber] = (byte)(iCurrentPosition);
+      iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
+      iAttack[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
+      UpdateCustomPropaties();
+    }
   }
 
   public void OnLeftButton(){
-    action[myNumber] = "moveleft";
-    int currentPosition = playerPosition[myNumber];
-    playerPosition[myNumber] = (playerPosition[myNumber] -1 +rockNum)%rockNum;
-    locate[myNumber] = (byte)(10*playerPosition[myNumber] + playerPosition[myNumber]);
-    attack[myNumber] = (byte)(playerPosition[myNumber]);
-    //Debug.Log("playerPosition[myNumber]:"+playerPosition[myNumber]);
-    OnTurn();
-    //Vector3.MoveTowards(characterPosition[currentPosition], characterPosition[playerPosition[myNumber]], 1.0f * Time.deltaTime);
+    if(iEndSelectAction[iMyNumber] == 0){
+      int iCurrentPosition = iPlayerPos[iMyNumber];
+      iPlayerPos[iMyNumber] = (iCurrentPosition -1 +iRockNum)%iRockNum;
+
+      iLocatePast[iMyNumber] = (byte)(iCurrentPosition);
+      iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
+      iAttack[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
+      UpdateCustomPropaties();
+    }
   }
 
   public void OnBackButton(){
-    action[myNumber] = "back";
+    sAction[iMyNumber] = "back";
   }
 
   public void OnWaitButton(){
-    action[myNumber] = "wait";
-    locate[myNumber] = (byte)(90 + playerPosition[myNumber]);
-    attack[myNumber] = (byte)(9);
+    //sAction[iMyNumber] = "wait";
+    iLocatePast[iMyNumber] = iLocate[iMyNumber];
+    iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
+    iAttack[iMyNumber] = (byte)(iRockNum + 1);
     OnTurn();
   }
 
