@@ -241,71 +241,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
     //this function call when user's action is decided.
     //so this should submit user's action.
   }
-/*
-  public void OnAimButton(){
-    sAction[iMyNumber] = "aim";
-  }
 
-  public void OnShotLeftButton(){
-    //sAction[iMyNumber] = "shotleft";
-    iLocatePast[iMyNumber] = iLocate[iMyNumber];
-    iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
-    iAttack[iMyNumber] = (byte)((iPlayerPos[iMyNumber] + 5)%iRockNum);
-    UpdateCustomPropaties();
-  }
-
-  public void OnShotCenterButton(){
-    //sAction[iMyNumber] = "shotcenter";
-    iLocatePast[iMyNumber] = iLocate[iMyNumber];
-    iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
-    iAttack[iMyNumber] = (byte)((iPlayerPos[iMyNumber] + 4)%iRockNum);
-    UpdateCustomPropaties();
-  }
-
-  public void OnShotRightButton(){
-    //sAction[iMyNumber] = "shotright";
-    iLocatePast[iMyNumber] = iLocate[iMyNumber];
-    iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
-    iAttack[iMyNumber] = (byte)((iPlayerPos[iMyNumber] + 3)%iRockNum);
-    UpdateCustomPropaties();
-  }
-
-  public void OnRightButton(){
-    if(iEndSelectAction[iMyNumber] == 0){
-      int iCurrentPosition = iPlayerPos[iMyNumber];
-      iPlayerPos[iMyNumber] = (iCurrentPosition +1)%iRockNum;
-
-      iLocatePast[iMyNumber] = (byte)(iCurrentPosition);
-      iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
-      iAttack[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
-      UpdateCustomPropaties();
-    }
-  }
-
-  public void OnLeftButton(){
-    if(iEndSelectAction[iMyNumber] == 0){
-      int iCurrentPosition = iPlayerPos[iMyNumber];
-      iPlayerPos[iMyNumber] = (iCurrentPosition -1 +iRockNum)%iRockNum;
-
-      iLocatePast[iMyNumber] = (byte)(iCurrentPosition);
-      iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
-      iAttack[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
-      UpdateCustomPropaties();
-    }
-  }
-
-  public void OnBackButton(){
-    sAction[iMyNumber] = "back";
-  }
-
-  public void OnWaitButton(){
-    //sAction[iMyNumber] = "wait";
-    iLocatePast[iMyNumber] = iLocate[iMyNumber];
-    iLocate[iMyNumber] = (byte)(iPlayerPos[iMyNumber]);
-    iAttack[iMyNumber] = (byte)(iRockNum + 1);
-    UpdateCustomPropaties();
-  }
-*/
   void MoveRight(int playerID){
     //Debug.Log($"MoveRight({playerID})");
     //プレイヤーの位置の移動（カメラも一緒に移動させる）
