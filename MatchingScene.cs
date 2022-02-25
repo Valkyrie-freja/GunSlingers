@@ -72,7 +72,7 @@ public class MatchingScene : MonoBehaviourPunCallbacks{
     Hashtable randomtable = new ExitGames.Client.Photon.Hashtable();
     for(int i = 0; i < PhotonNetwork.CurrentRoom.PlayerCount; i++){
       playerPosition[i] = Random.Range(0, GameScene.GetRockNum());
-      randomtable[i] = playerPosition[i];
+      randomtable[$"{i}"] = playerPosition[i];
     }
     PhotonNetwork.LocalPlayer.SetCustomProperties(randomtable);
     randomtable.Clear();
@@ -80,7 +80,7 @@ public class MatchingScene : MonoBehaviourPunCallbacks{
 
   public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps){//カスタムプロパティが変更されるたびに呼び出されるらしい
     if(PhotonNetwork.LocalPlayer.ActorNumber != 1){
-      for(int i = 0;i < PhotonNetwork.CurrentRoom.PlayerCount; i++){playerPosition[i] = (targetPlayer.CustomProperties[i] is int value1) ? (int)value1 : -1;}
+      for(int i = 0;i < PhotonNetwork.CurrentRoom.PlayerCount; i++){playerPosition[i] = (targetPlayer.CustomProperties[$"{i}"] is int value1) ? (int)value1 : -1;}
       isGetPlayerPosition = true;
     }
   }
