@@ -18,12 +18,27 @@ public class GameScene : MonoBehaviourPunCallbacks{
 
   //各オブジェクトの座標
   Vector3[] v3RockPos = new Vector3[iRockNum];
-  Vector3[] v3StandPos = new Vector3[iRockNum];//プレイヤーは岩の後ろに隠れるため、プレイヤーの立ち位置も岩と同数
+  static Vector3[] v3StandPos = new Vector3[iRockNum];//プレイヤーは岩の後ろに隠れるため、プレイヤーの立ち位置も岩と同数
   Vector3[] v3TrgPos = new Vector3[iRockNum];//円型に並んでいるので岩の数と岩の間の数は同数
-  Vector3 v3CameraHeight = new Vector3(0, 10, 0);
+  static Vector3 v3CameraHeight = new Vector3(0, 10, 0);
   static int[] iPlayerPos = new int[iPlayerCount];
-  GameObject[] goPlayer = new GameObject[iPlayerCount];
-  public GameObject mainCamera;
+  static GameObject[] goPlayer = new GameObject[iPlayerCount];
+  public static GameObject mainCamera;
+
+  public static GameObject goShowPlayer(int num){ return goPlayer[num]; }
+  public static Vector3    v3ShowPlayerTransPos(int num){ return goPlayer[num].transform.position; }
+
+  public static GameObject goShowCamera(){ return mainCamera; }
+  public static Vector3    v3ShowCameraTransPos(){ return mainCamera.transform.position; }
+
+  public static Vector3 v3ShowStandPos(int num){ return v3StandPos[num]; }
+
+  public static Vector3 v3ShowCameraHeight(){ return v3CameraHeight; }
+  public static Vector3 v3ShowStageCenter(){ return v3StageCenter; }
+
+  public static void SetPlayerTransPos(int num, Vector3 input){ goPlayer[num].transform.position = input; }
+  public static void SetCameraTransPos(Vector3 input){ mainCamera.transform.position = input; }
+  public static void SetCameraTransLook(Vector3 input){ mainCamera.transform.LookAt(input); }
 
   public Text text;
   public GameObject[] CharacterList = new GameObject[4];
@@ -112,6 +127,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
 
   // Start is called before the first frame update
   void Start(){
+    mainCamera = Camera.main.gameObject;
     PhotonNetwork.IsMessageQueueRunning = true;
     sMyName = SelectScene.GetCharacterName();//SelectSceneで選択したキャラクターをsMyNameに設定
     CalculatePosition();//岩やプレイヤーの位置の計算
@@ -127,10 +143,6 @@ public class GameScene : MonoBehaviourPunCallbacks{
     }
 
     var players = PhotonNetwork.PlayerList;//自分を含んだ全プレイヤーのデータの配列
-    // for(int i = 0; i < iPlayerCount; i++){
-    //   Debug.Log($"pn:{players[i].ActorNumber}");
-    // }
-
 
     //選択したキャラクターを生成
     for(int i = 0; i < iPlayerCount; i++){
@@ -142,8 +154,10 @@ public class GameScene : MonoBehaviourPunCallbacks{
     }
 
     //カメラをキャラクターの外側のちょっと上に中心を見るように設置
-    mainCamera.transform.position = v3StageCenter + 1.3f*(v3StandPos[iPlayerPos[iMyNumber]]-v3StageCenter) + v3CameraHeight;
-    mainCamera.transform.LookAt(v3StageCenter);
+    SetCameraTransPos(GameAction.v3CameraPos());
+    SetCameraTransLook(v3StageCenter);
+    //mainCamera.transform.position = v3StageCenter + 1.3f*(v3StandPos[iPlayerPos[iMyNumber]]-v3StageCenter) + v3CameraHeight;
+    //mainCamera.transform.LookAt(v3StageCenter);
 
     //Debug.Log("your id is "+iMyNumber);
 
@@ -157,21 +171,21 @@ public class GameScene : MonoBehaviourPunCallbacks{
     for(int iPlayerNum = 0; iPlayerNum < iPlayerCount; iPlayerNum++){
       switch(sAction[iPlayerNum]){
       case "moveright":
-        MoveRight(iPlayerNum);
+        GameAction.MoveRight(iPlayerNum);
         if(goPlayer[iPlayerNum].transform.position == v3StandPos[iLocate[iPlayerNum]]){
           iEndAction[iPlayerNum] = 1;
         }
         break;
 
       case "moveleft":
-        MoveLeft(iPlayerNum);
+        GameAction.MoveLeft(iPlayerNum);
         if(goPlayer[iPlayerNum].transform.position == v3StandPos[iLocate[iPlayerNum]]){
           iEndAction[iPlayerNum] = 1;
         }
         break;
 
       case "shot":
-        Shot(iPlayerNum);
+        GameAction.Shot(iPlayerNum);
         if(/*Shot completed*/true){
           OnStartTurn();
         }
@@ -241,7 +255,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
     //this function call when user's action is decided.
     //so this should submit user's action.
   }
-
+/*
   void MoveRight(int playerID){
     //Debug.Log($"MoveRight({playerID})");
     //プレイヤーの位置の移動（カメラも一緒に移動させる）
@@ -266,7 +280,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
   }
 
   void DeadAnimation(int playerID){}
-  void KillAnimation(int playerID){}
+  void KillAnimation(int playerID){}*/
 
   enum Site{rock, target}
 
