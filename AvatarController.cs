@@ -9,6 +9,7 @@ public class AvatarController : MonoBehaviourPunCallbacks
         if (photonView.IsMine) {
             var input = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical"));
             transform.Translate(6f * Time.deltaTime * input.normalized);
+				//ipad test
         }
     }
 }
