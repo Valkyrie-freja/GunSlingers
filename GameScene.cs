@@ -44,9 +44,9 @@ public class GameScene : MonoBehaviourPunCallbacks{
   public GameObject[] CharacterList = new GameObject[4];
   GameObject goSelectCharacter(string sChName){
     switch(sChName){
-      case "AvatarFox": return CharacterList[0]; break;
-      case "AvatarHuman": return CharacterList[1]; break;
-      case "AvatarHawk": return CharacterList[2]; break;
+      case "AvatarFox":    return CharacterList[0]; break;
+      case "AvatarHuman":  return CharacterList[1]; break;
+      case "AvatarHawk":   return CharacterList[2]; break;
       case "AvatarHelmet": return CharacterList[3]; break;
     }
     return null;
@@ -156,10 +156,6 @@ public class GameScene : MonoBehaviourPunCallbacks{
     //カメラをキャラクターの外側のちょっと上に中心を見るように設置
     SetCameraTransPos(GameAction.v3CameraPos());
     SetCameraTransLook(v3StageCenter);
-    //mainCamera.transform.position = v3StageCenter + 1.3f*(v3StandPos[iPlayerPos[iMyNumber]]-v3StageCenter) + v3CameraHeight;
-    //mainCamera.transform.LookAt(v3StageCenter);
-
-    //Debug.Log("your id is "+iMyNumber);
 
     text = text.GetComponent<Text>();
     text.text = $"{iSumSeq(iEndSelectAction)}/{PhotonNetwork.CurrentRoom.PlayerCount}";
@@ -254,33 +250,11 @@ public class GameScene : MonoBehaviourPunCallbacks{
 
     //this function call when user's action is decided.
     //so this should submit user's action.
+	WhoKillWho();
+	//↑で誰が誰を殺したかがわかるので、それによってActionを更新
+	//例)Actionがmoverightで殺されたら右に移動中に殺されるようにする
+	//.   Actionがshotで誰かを殺したら死ぬ奴を表示しながら殺すようにする
   }
-/*
-  void MoveRight(int playerID){
-    //Debug.Log($"MoveRight({playerID})");
-    //プレイヤーの位置の移動（カメラも一緒に移動させる）
-    goPlayer[playerID].transform.position = Vector3.MoveTowards(goPlayer[playerID].transform.position, v3StandPos[iPlayerPos[playerID]], 100.0f * Time.deltaTime);
-    if(playerID == iMyNumber){//自分のキャラのときはカメラも動かす
-      mainCamera.transform.position = Vector3.MoveTowards(mainCamera.transform.position, v3StageCenter + 1.3f*(v3StandPos[iPlayerPos[iMyNumber]]-v3StageCenter) + v3CameraHeight, 150.0f * Time.deltaTime);
-      mainCamera.transform.LookAt(v3StageCenter);//ステージの中心にカメラを向けておく
-    }
-  }
-
-  void MoveLeft(int playerID){
-    //プレイヤーの位置の移動（カメラも一緒に移動させる）
-    goPlayer[playerID].transform.position = Vector3.MoveTowards(goPlayer[playerID].transform.position, v3StandPos[iPlayerPos[playerID]], 100.0f * Time.deltaTime);
-    if(playerID == iMyNumber){//自分のキャラのときはカメラも動かす
-      mainCamera.transform.position = Vector3.MoveTowards(mainCamera.transform.position, v3StageCenter + 1.3f*(v3StandPos[iPlayerPos[iMyNumber]]-v3StageCenter) + v3CameraHeight, 150.0f * Time.deltaTime);
-      mainCamera.transform.LookAt(v3StageCenter);//ステージの中心にカメラを向けておく
-    }
-  }
-
-  void Shot(int playerID){
-
-  }
-
-  void DeadAnimation(int playerID){}
-  void KillAnimation(int playerID){}*/
 
   enum Site{rock, target}
 
