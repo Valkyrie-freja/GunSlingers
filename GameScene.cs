@@ -238,16 +238,16 @@ public class GameScene : MonoBehaviourPunCallbacks{
 
     //this function call when user's action is decided.
     //so this should submit user's action.
-	WhoKillWho();
-	//↑で誰が誰を殺したかがわかるので、それによってActionを更新
-	//例)Actionがmoverightで殺されたら右に移動中に殺されるようにする
-	//.   Actionがshotで誰かを殺したら死ぬ奴を表示しながら殺すようにする
-	foreach(Result rPreResult in result){
-		if(rPreResult.iGetIsKill() == 1){
-		}else if(rPreResult.iGetIsKill == -1){
-			break;
-		}
-	}
+  	WhoKillWho();
+  	//↑で誰が誰を殺したかがわかるので、それによってActionを更新
+  	//例)Actionがmoverightで殺されたら右に移動中に殺されるようにする
+  	//.   Actionがshotで誰かを殺したら死ぬ奴を表示しながら殺すようにする
+  	foreach(Result rPreResult in result){
+  		if(rPreResult.iGetIsKill() == 1){
+  		}else if(rPreResult.iGetIsKill == -1){
+  			break;
+  		}
+  	}
   }
 
   enum Site{rock, target}
@@ -258,11 +258,11 @@ public class GameScene : MonoBehaviourPunCallbacks{
     public void ShowResult(){
       //Debug.Log($"{killer} kill {victim} in {site}, {position}");
     }
-	public int iGetVictim(){return victim;}
-	public int iGetKiller(){return killer;}
-	public int iGetSite()  {return site;}
-	public int iGetPos()   {return position;}
-	public int iGetIsKill(){return isKill;}
+  	public int iGetVictim(){return victim;}
+  	public int iGetKiller(){return killer;}
+  	public int iGetSite()  {return site;}
+  	public int iGetPos()   {return position;}
+  	public int iGetIsKill(){return isKill;}
   };
 
   Result[] result = new Result[16];
@@ -270,7 +270,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
   void InitializeResult(){
     for(int i = 0; i < 16; i++){
       result[i] = new Result();
-		result[i].isKill = -1;
+      result[i].isKill = -1;
     }
   }
 
