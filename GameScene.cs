@@ -244,6 +244,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
   	//.   Actionがshotで誰かを殺したら死ぬ奴を表示しながら殺すようにする
   	foreach(Result rPreResult in result){
   		if(rPreResult.iGetIsKill() == 1){
+			sAction[rPreResult.iGetVictim()] += "dead";
   		}else if(rPreResult.iGetIsKill == -1){
   			break;
   		}
