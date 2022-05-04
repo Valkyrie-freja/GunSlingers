@@ -168,6 +168,18 @@ public class GameScene : MonoBehaviourPunCallbacks{
         }
         break;
 
+      case "moverightdead":
+        //moveright and dead
+		break;
+		
+		case "moveleftdead":
+			//moveleft and dead
+			break;
+			
+		case "waitdead":
+			//wait and dead
+			break;
+
       case "shot":
         GameAction.Shot(iPlayerNum);
         if(/*Shot completed*/true){
