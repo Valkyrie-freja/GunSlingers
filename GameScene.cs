@@ -15,11 +15,12 @@ public class GameScene : MonoBehaviourPunCallbacks{
   public static int GetRockNum(){return iRockNum;}
 
   static int iPlayerCount = PhotonNetwork.CurrentRoom.PlayerCount;//プレイヤーの数
+  static int iAlivePlayerCount = iPlayerCount;
 
   //各オブジェクトの座標
-  Vector3[] v3RockPos = new Vector3[iRockNum];
+         Vector3[] v3RockPos  = new Vector3[iRockNum];
   static Vector3[] v3StandPos = new Vector3[iRockNum];//プレイヤーは岩の後ろに隠れるため、プレイヤーの立ち位置も岩と同数
-  Vector3[] v3TrgPos = new Vector3[iRockNum];//円型に並んでいるので岩の数と岩の間の数は同数
+         Vector3[] v3TrgPos   = new Vector3[iRockNum];//円型に並んでいるので岩の数と岩の間の数は同数
   static Vector3 v3CameraHeight = new Vector3(0, 10, 0);
   static int[] iPlayerPos = new int[iPlayerCount];
   static GameObject[] goPlayer = new GameObject[iPlayerCount];
@@ -170,15 +171,33 @@ public class GameScene : MonoBehaviourPunCallbacks{
 
       case "moverightdead":
         //moveright and dead
-		break;
-		
-		case "moveleftdead":
-			//moveleft and dead
-			break;
-			
-		case "waitdead":
-			//wait and dead
-			break;
+        goPlayer[iPlayerNum].transform.position = Vector3.MoveTowards(goPlayer[iPlayerNum].transform.position, v3TrgPos[iLocate[iPlayerNum]], 100.0f * Time.deltaTime);
+        if(goPlayer[iPlayerNum].transform.position == v3TrgPos[iLocate[iPlayerNum]]){
+          Debug.Log("you dead");
+          Vector3 pos = goPlayer[iPlayerNum].transform.position;
+          pos.y += 5;
+          goPlayer[iPlayerNum].transform.position = pos;
+          iAlivePlayerCount--;
+          iEndAction[iPlayerNum] = 1;
+        }
+        break;
+
+      case "moveleftdead":
+        //moveleft and dead
+        goPlayer[iPlayerNum].transform.position = Vector3.MoveTowards(goPlayer[iPlayerNum].transform.position, v3TrgPos[(iLocate[iPlayerNum] - 1)%iRockNum], 100.0f * Time.deltaTime);
+        if(goPlayer[iPlayerNum].transform.position == v3TrgPos[iLocate[iPlayerNum]]){
+          Debug.Log("you dead");
+          Vector3 pos = goPlayer[iPlayerNum].transform.position;
+          pos.y += 5;
+          goPlayer[iPlayerNum].transform.position = pos;
+          iAlivePlayerCount--;
+          iEndAction[iPlayerNum] = 1;
+        }
+        break;
+
+      case "waitdead":
+			  //wait and dead
+        break;
 
       case "shot":
         GameAction.Shot(iPlayerNum);
@@ -205,7 +224,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
     }
 
     Debug.Log($"sum:{iSumSeq(iEndAction)}/pc{iPlayerCount}");
-    if(iSumSeq(iEndAction) >= iPlayerCount)OnStartTurn();
+    if(iSumSeq(iEndAction) >= iAlivePlayerCount)OnStartTurn();
   }
 
   //ターン開始時の処理
@@ -256,8 +275,8 @@ public class GameScene : MonoBehaviourPunCallbacks{
   	//.   Actionがshotで誰かを殺したら死ぬ奴を表示しながら殺すようにする
   	foreach(Result rPreResult in result){
   		if(rPreResult.iGetIsKill() == 1){
-			sAction[rPreResult.iGetVictim()] += "dead";
-  		}else if(rPreResult.iGetIsKill == -1){
+        sAction[rPreResult.iGetVictim()] += "dead";
+  		}else if(rPreResult.iGetIsKill() == -1){
   			break;
   		}
   	}
@@ -342,7 +361,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
       iEndSelectAction[targetPlayer.ActorNumber - 1] = 1;
       text.text = $"{iSumSeq(iEndSelectAction)}/{PhotonNetwork.CurrentRoom.PlayerCount}";
     }
-    if(iSumSeq(iEndSelectAction)>=iPlayerCount){
+    if(iSumSeq(iEndSelectAction)>=iAlivePlayerCount){
       OnEndTurn();
     }
   }
