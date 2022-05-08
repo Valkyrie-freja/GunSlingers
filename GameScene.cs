@@ -2,6 +2,7 @@
 //using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+//using System.Collections;
 
 using Photon.Pun;
 using Photon.Realtime;
@@ -116,6 +117,9 @@ public class GameScene : MonoBehaviourPunCallbacks{
     }
   }
 
+
+
+
   // Start is called before the first frame update
   void Start(){
     mainCamera = Camera.main.gameObject;
@@ -149,6 +153,9 @@ public class GameScene : MonoBehaviourPunCallbacks{
 
     text = text.GetComponent<Text>();
     text.text = $"{iSumSeq(iEndSelectAction)}/{PhotonNetwork.CurrentRoom.PlayerCount}";
+
+    Animation.SetWalkSpeed(0f);
+
   }
 
   // Update is called once per frame
@@ -156,15 +163,19 @@ public class GameScene : MonoBehaviourPunCallbacks{
     for(int iPlayerNum = 0; iPlayerNum < iPlayerCount; iPlayerNum++){
       switch(sAction[iPlayerNum]){
       case "moveright":
+        Animation.SetWalkSpeed(0.1f);
         GameAction.MoveRight(iPlayerNum);
         if(goPlayer[iPlayerNum].transform.position == v3StandPos[iLocate[iPlayerNum]]){
+          Animation.SetWalkSpeed(0f);
           iEndAction[iPlayerNum] = 1;
         }
         break;
 
       case "moveleft":
+        Animation.SetWalkSpeed(0.5f);
         GameAction.MoveLeft(iPlayerNum);
         if(goPlayer[iPlayerNum].transform.position == v3StandPos[iLocate[iPlayerNum]]){
+          Animation.SetWalkSpeed(0f);
           iEndAction[iPlayerNum] = 1;
         }
         break;
