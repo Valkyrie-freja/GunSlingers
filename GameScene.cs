@@ -39,9 +39,10 @@ public class GameScene : MonoBehaviourPunCallbacks{
   public static Vector3 v3ShowStageCenter(){ return v3StageCenter; }
 
   public static void SetPlayerTransPos(int num, Vector3 input){ goPlayer[num].transform.position = input; }
+  public static void SetPlayerTransLook(int num, Vector3 input){ goPlayer[num].transform.LookAt(input); }
   public static void SetCameraTransPos(Vector3 input){ mainCamera.transform.position = input; }
   public static void SetCameraTransLook(Vector3 input){ mainCamera.transform.LookAt(input); }
-
+  static float fPlayerSpeed = 100.0f;
   public Text text;
   public GameObject[] CharacterList = new GameObject[4];
   GameObject goSelectCharacter(string sChName){
@@ -117,7 +118,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
     }
   }
 
-
+  Animator[] anim = new Animator[iPlayerCount];
 
 
   // Start is called before the first frame update
@@ -154,7 +155,11 @@ public class GameScene : MonoBehaviourPunCallbacks{
     text = text.GetComponent<Text>();
     text.text = $"{iSumSeq(iEndSelectAction)}/{PhotonNetwork.CurrentRoom.PlayerCount}";
 
-    Animation.SetWalkSpeed(0f);
+    for(int i = 0; i < iPlayerCount; i++){
+      anim[i] = goPlayer[i].GetComponent <Animator> ();
+      anim[i].SetFloat("Speed", 0f);
+    }
+    //Animation.SetWalkSpeed(0f);
 
   }
 
@@ -163,19 +168,19 @@ public class GameScene : MonoBehaviourPunCallbacks{
     for(int iPlayerNum = 0; iPlayerNum < iPlayerCount; iPlayerNum++){
       switch(sAction[iPlayerNum]){
       case "moveright":
-        Animation.SetWalkSpeed(0.1f);
+        anim[iPlayerNum].SetFloat("Speed", fPlayerSpeed);
         GameAction.MoveRight(iPlayerNum);
         if(goPlayer[iPlayerNum].transform.position == v3StandPos[iLocate[iPlayerNum]]){
-          Animation.SetWalkSpeed(0f);
+          anim[iPlayerNum].SetFloat("Speed", 0f);
           iEndAction[iPlayerNum] = 1;
         }
         break;
 
       case "moveleft":
-        Animation.SetWalkSpeed(0.5f);
+        anim[iPlayerNum].SetFloat("Speed", fPlayerSpeed);
         GameAction.MoveLeft(iPlayerNum);
         if(goPlayer[iPlayerNum].transform.position == v3StandPos[iLocate[iPlayerNum]]){
-          Animation.SetWalkSpeed(0f);
+          anim[iPlayerNum].SetFloat("Speed", 0f);
           iEndAction[iPlayerNum] = 1;
         }
         break;
