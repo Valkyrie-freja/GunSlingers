@@ -42,7 +42,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
   public static void SetPlayerTransLook(int num, Vector3 input){ goPlayer[num].transform.LookAt(input); }
   public static void SetCameraTransPos(Vector3 input){ mainCamera.transform.position = input; }
   public static void SetCameraTransLook(Vector3 input){ mainCamera.transform.LookAt(input); }
-  static float fPlayerSpeed = 100.0f;
+  static float fPlayerSpeed = 10.0f;
   public Text text;
   public GameObject[] CharacterList = new GameObject[4];
   GameObject goSelectCharacter(string sChName){
@@ -153,7 +153,7 @@ public class GameScene : MonoBehaviourPunCallbacks{
     SetCameraTransLook(v3StageCenter);
 
     text = text.GetComponent<Text>();
-    text.text = $"{iSumSeq(iEndSelectAction)}/{PhotonNetwork.CurrentRoom.PlayerCount}";
+    text.text = $"{iSumSeq(iEndSelectAction)}/{iAlivePlayerCount}";
 
     for(int i = 0; i < iPlayerCount; i++){
       anim[i] = goPlayer[i].GetComponent <Animator> ();
@@ -187,27 +187,29 @@ public class GameScene : MonoBehaviourPunCallbacks{
 
       case "moverightdead":
         //moveright and dead
+        anim[iPlayerNum].SetFloat("Speed", fPlayerSpeed);
         goPlayer[iPlayerNum].transform.position = Vector3.MoveTowards(goPlayer[iPlayerNum].transform.position, v3TrgPos[iLocate[iPlayerNum]], 100.0f * Time.deltaTime);
         if(goPlayer[iPlayerNum].transform.position == v3TrgPos[iLocate[iPlayerNum]]){
           Debug.Log("you dead");
           Vector3 pos = goPlayer[iPlayerNum].transform.position;
           pos.y += 5;
           goPlayer[iPlayerNum].transform.position = pos;
+          anim[iPlayerNum].SetFloat("Speed", 0f);
           iAlivePlayerCount--;
-          iEndAction[iPlayerNum] = 1;
         }
         break;
 
       case "moveleftdead":
         //moveleft and dead
+        anim[iPlayerNum].SetFloat("Speed", fPlayerSpeed);
         goPlayer[iPlayerNum].transform.position = Vector3.MoveTowards(goPlayer[iPlayerNum].transform.position, v3TrgPos[(iLocate[iPlayerNum] - 1)%iRockNum], 100.0f * Time.deltaTime);
         if(goPlayer[iPlayerNum].transform.position == v3TrgPos[iLocate[iPlayerNum]]){
           Debug.Log("you dead");
           Vector3 pos = goPlayer[iPlayerNum].transform.position;
           pos.y += 5;
           goPlayer[iPlayerNum].transform.position = pos;
+          anim[iPlayerNum].SetFloat("Speed", 0f);
           iAlivePlayerCount--;
-          iEndAction[iPlayerNum] = 1;
         }
         break;
 
